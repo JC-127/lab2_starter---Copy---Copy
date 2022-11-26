@@ -85,6 +85,13 @@ Ticket_tgs_content = disassemble2bytes(Ticket_tgs_dec)
 TS2_recved = int(Ticket_tgs_content[4].decode())
 lifetime2_recved = int(Ticket_tgs_content[5].decode())
 
+# check expiration
+current_time = time.time()
+print("current_time: ", current_time)
+print("TS2_recved: ", TS2_recved)
+print("lifetime2_recved: ", lifetime2_recved)
+assert current_time - TS2_recved <= lifetime2_recved, "Ticket_tgs expired."
+
 ##################### Start Working Here ####################################
 
 #compose msg4 TGS -> C
@@ -126,9 +133,3 @@ Ticket_tgs_c = E_tgs_c.encrypt(pad(ticket_content_v, BLOCK_SIZE))
 #decrypt msg 5
 
 
-# check expiration
-current_time = time.time()
-print("current_time: ", current_time)
-print("TS2_recved: ", TS2_recved)
-print("lifetime2_recved: ", lifetime2_recved)
-assert current_time - TS2_recved <= lifetime2_recved, "Ticket_tgs expired."
