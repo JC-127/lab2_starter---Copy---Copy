@@ -128,8 +128,9 @@ ticket_content_v = assemble2bytes(K_c_v, ID_c, AD_c, ID_v, TS4, lifetime4)
 E_tgs_c = AES.new(K_v, AES.MODE_ECB)
 Ticket_tgs_c = E_tgs_c.encrypt(pad(ticket_content_v, BLOCK_SIZE))
 
-
 #compose msg6 V -> C
 #decrypt msg 5
+msg5_dec = E_tgs_c.decrypt(msg5)
+Ticket_V_C = disassemble2bytes(msg5_dec)[4]
 
 
