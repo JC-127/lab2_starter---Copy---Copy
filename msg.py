@@ -101,7 +101,7 @@ assert current_time - TS2_recved <= lifetime2_recved, "Ticket_tgs expired."
 
 #compose msg4 TGS -> C
 #decrypt msg3 to get content
-msg3_dec = E_c.decrypt(msg3)
+msg3_dec = E_c_tgs.decrypt(msg3)
 Ticket_tgs_content = disassemble2bytes(msg3_dec)[4]
 
 time.sleep(1) # sleep for 1 sec to get different time stamps 
@@ -130,24 +130,35 @@ E_tgs_c = AES.new(K_c_tgs, AES.MODE_ECB)
 Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
 msg4 = assemble2bytes(K_c_v, ID_v, TS4, ticket_content_v)
 
-
 ############ My Logic Got Kinda Wonky Here ###############
 
 #compose msg5 C -> V
-
 #decrypt msg4
 msg4_dec = E_tgs_c.decrypt(msg4)
-Ticket_tgs_content = disassemble2bytes(msg4_dec)[4]
+ticket_content_v = disassemble2bytes(msg4_dec)[4]
 
 #Authenticator_c for V
 #msg5 = Ticket_v||Authenticator_c
 time.sleep() # sleep for 1 sec to get different time stamps 
 TS5 = int(time.time())
 authenticator_content = assemble2bytes(ID_c, AD_c, TS5)
-E_tgs_c = AES.new(K_c_v, AES.MODE_ECB)
-Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
-msg5 = assemble2bytes(ID_v, Ticket_tgs_content, Authenticator_c)
-
+E_c_v = AES.new(K_c_v, AES.MODE_ECB)
+Authenticator_c = E_c_v.encrypt(pad(authenticator_content, BLOCK_SIZE))
+msg5 = assemble2bytes(ID_v, ticket_content_v, Authenticator_c)
 
 #compose msg6 V -> C
 #decrypt msg 5
+msg5_dec = E_c_v.decrypt(msg5)
+Ticket_tgs_content = disassemble2bytes(msg5_dec)[4]
+
+#msg6 = E(K_c_v,[TS5 + 1])
+time.sleep() # sleep for 1 sec to get different time stamps 
+TS5 = int(time.time())
+authenticator_content = assemble2bytes(ID_c, AD_c, TS5)
+E_c_v = AES.new(K_c_v, AES.MODE_ECB)
+Authenticator_c = E_c_v.encrypt(pad(authenticator_content, BLOCK_SIZE))
+msg6 = assemble2bytes( authenticator_content ,TS5 + 1)
+
+
+
+
