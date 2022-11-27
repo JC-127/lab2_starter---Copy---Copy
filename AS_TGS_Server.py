@@ -3,8 +3,8 @@
 import socket
 import pyDes as pydes
 import time
-import msg
-
+import client
+import server 
 
 #message objects
 class Packet:
