@@ -55,17 +55,20 @@ time.sleep(1) # sleep for 1 sec to get different time stamps
 TS2 = int(time.time())
 print("TS2: ", TS2)
 lifetime2 = 60
+
+#Ticket TGS
 ticket_content = assemble2bytes(K_c_tgs, ID_c, AD_c, ID_tgs, TS2, lifetime2)
 E_tgs = AES.new(K_tgs, AES.MODE_ECB)
 Ticket_tgs = E_tgs.encrypt(pad(ticket_content, BLOCK_SIZE))
 
-# msg2
+# msg2 which AS -> C
+# E(K_c[K_c_tgs||ID_tgs||lifetime2||Ticket_tgs])
 msg2_content = assemble2bytes(K_c_tgs, ID_tgs, TS2, lifetime2, Ticket_tgs)
 E_c = AES.new(K_c, AES.MODE_ECB)
 msg2 = E_c.encrypt(pad(msg2_content, BLOCK_SIZE))
 
 # compose msg3, C -> TGS
-# decrypt msg2 to get ticket first
+# decrypt msg2 to get ticket first from TGS
 msg2_dec = E_c.decrypt(msg2)
 Ticket_tgs_recved = disassemble2bytes(msg2_dec)[4]
 
@@ -73,6 +76,8 @@ Ticket_tgs_recved = disassemble2bytes(msg2_dec)[4]
 # Authenticator first 
 time.sleep() # sleep for 1 sec to get different time stamps 
 TS3 = int(time.time())
+
+#Authenticator_c
 authenticator_content = assemble2bytes(ID_c, AD_c, TS3)
 E_c_tgs = AES.new(K_c_tgs, AES.MODE_ECB)
 Authenticator_c = E_c_tgs.encrypt(pad(authenticator_content, BLOCK_SIZE))
@@ -101,25 +106,15 @@ Ticket_tgs_content = disassemble2bytes(msg3_dec)[4]
 
 time.sleep(1) # sleep for 1 sec to get different time stamps 
 TS4 = int(time.time())
-authenticator_content = assemble2bytes(K_c_tgs, ID_c, AD_c, TS3)
-E_tgs_c = AES.new(K_c_tgs, AES.MODE_ECB)
-Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
-msg4 = assemble2bytes( ID_v, Ticket_tgs_content, Authenticator_c, TS4, )  #need variable K_c_v
 
-#compose msg5 C -> V
-#decrypt msg4
-msg4_dec = E_tgs_c.decrypt(msg4)
-Ticket_tgs_content = disassemble2bytes(msg4_dec)[4]
-
-#Authenticator for V
-time.sleep() # sleep for 1 sec to get different time stamps 
-TS3 = int(time.time())
-authenticator_content = assemble2bytes(ID_c, AD_c, TS3)
-E_tgs_c = AES.new(K_c_tgs, AES.MODE_ECB)
-Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
-msg5 = assemble2bytes(ID_v, Ticket_tgs_content, Authenticator_c)
+#Ticket_tgs for TGS -> C
+#E(K_tgs,[K_c_tgs||ID_c||AD_c||ID_tgs||TS2||Lifetime2])
+ticket_content_tgs_c = assemble2bytes(K_c_tgs, ID_c, AD_c, ID_tgs, TS2, lifetime2)
+E_tgs_c = AES.new(K_tgs, AES.MODE_ECB)
+Ticket_tgs = E_tgs.encrypt(pad(ticket_content, BLOCK_SIZE))
 
 #Ticket for v: ticket_v
+#E(K_v,[K_c_v||ID_c||AD_c||ID_v||TS4||Lifetime4])
 time.sleep(1) # sleep for 1 sec to get different time stamps 
 TS4 = int(time.time())
 print("TS4: ", TS4)
@@ -128,9 +123,31 @@ ticket_content_v = assemble2bytes(K_c_v, ID_c, AD_c, ID_v, TS4, lifetime4)
 E_tgs_c = AES.new(K_v, AES.MODE_ECB)
 Ticket_tgs_c = E_tgs_c.encrypt(pad(ticket_content_v, BLOCK_SIZE))
 
+#Authenticator_c for TGS -> C
+#msg4 = E(K_c_tgs,[ID_c||AD_c||TS3])
+authenticator_content = assemble2bytes(ID_c, AD_c, TS3)
+E_tgs_c = AES.new(K_c_tgs, AES.MODE_ECB)
+Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
+msg4 = assemble2bytes(K_c_v, ID_v, TS4, ticket_content_v)
+
+
+############ My Logic Got Kinda Wonky Here ###############
+
+#compose msg5 C -> V
+
+#decrypt msg4
+msg4_dec = E_tgs_c.decrypt(msg4)
+Ticket_tgs_content = disassemble2bytes(msg4_dec)[4]
+
+#Authenticator_c for V
+#msg5 = Ticket_v||Authenticator_c
+time.sleep() # sleep for 1 sec to get different time stamps 
+TS5 = int(time.time())
+authenticator_content = assemble2bytes(ID_c, AD_c, TS5)
+E_tgs_c = AES.new(K_c_v, AES.MODE_ECB)
+Authenticator_c = E_tgs_c.encrypt(pad(authenticator_content, BLOCK_SIZE))
+msg5 = assemble2bytes(ID_v, Ticket_tgs_content, Authenticator_c)
+
+
 #compose msg6 V -> C
 #decrypt msg 5
-msg5_dec = E_tgs_c.decrypt(msg5)
-Ticket_V_C = disassemble2bytes(msg5_dec)[4]
-
-
